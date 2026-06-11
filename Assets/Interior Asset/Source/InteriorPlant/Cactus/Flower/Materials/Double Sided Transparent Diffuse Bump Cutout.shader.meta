@@ -1,0 +1,17 @@
+fileFormatVersion: 2
+guid: 7563e363b7562664ea561ae0495735d1
+timeCreated: 1490294429
+licenseType: Store
+ShaderImporter:
+  defaultTextures: []
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 86452
+  packageName: Interior Props Pack Asset
+  packageVersion: 1.0
+  assetPath: Assets/Interior Asset/Source/InteriorPlant/Cactus/Flower/Materials/Double
+    Sided Transparent Diffuse Bump Cutout.shader
+  uploadId: 198477

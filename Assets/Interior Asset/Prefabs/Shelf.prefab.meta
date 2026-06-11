@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 28dd981650691bf4b998a5570c7f03a2
+timeCreated: 1503850132
+licenseType: Store
+NativeFormatImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 86452
+  packageName: Interior Props Pack Asset
+  packageVersion: 1.0
+  assetPath: Assets/Interior Asset/Prefabs/Shelf.prefab
+  uploadId: 198477

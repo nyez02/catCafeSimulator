@@ -1,0 +1,312 @@
+fileFormatVersion: 2
+guid: 97b168bc31763f54397a9e7128e898c7
+ModelImporter:
+  serializedVersion: 24200
+  internalIDToNameTable: []
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: M_Body
+    second: {fileID: 2100000, guid: 2b0e073885065a24381169bf3b8af3df, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: M_Bottom_Clothes
+    second: {fileID: 2100000, guid: cfdf6bd89dc61994d93fd8ca2fea3b7a, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: M_Face
+    second: {fileID: 2100000, guid: 48d102fffd5bd2049a09353a256c2a5b, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: M_Hair
+    second: {fileID: 2100000, guid: ba111f42df5cd1040af0ec8639d04090, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: M_Top_Clothes
+    second: {fileID: 2100000, guid: 7e298c8a0da7dab47a4105e0bf299b29, type: 2}
+  materials:
+    materialImportMode: 2
+    materialName: 0
+    materialSearch: 1
+    materialLocation: 1
+  animations:
+    legacyGenerateAnimations: 4
+    bakeSimulation: 0
+    resampleCurves: 1
+    optimizeGameObjects: 0
+    removeConstantScaleCurves: 0
+    motionNodeName: 
+    animationImportErrors: 
+    animationImportWarnings: 
+    animationRetargetingWarnings: 
+    animationDoRetargetingWarnings: 0
+    importAnimatedCustomProperties: 0
+    importConstraints: 0
+    animationCompression: 3
+    animationRotationError: 0.5
+    animationPositionError: 0.5
+    animationScaleError: 0.5
+    animationWrapMode: 0
+    extraExposedTransformPaths: []
+    extraUserProperties: []
+    clipAnimations: []
+    isReadable: 0
+  meshes:
+    lODScreenPercentages: []
+    globalScale: 1
+    meshCompression: 0
+    addColliders: 0
+    useSRGBMaterialColor: 1
+    sortHierarchyByName: 1
+    importPhysicalCameras: 1
+    importVisibility: 1
+    importBlendShapes: 1
+    importCameras: 1
+    importLights: 1
+    nodeNameCollisionStrategy: 1
+    fileIdsGeneration: 2
+    swapUVChannels: 0
+    generateSecondaryUV: 0
+    useFileUnits: 1
+    keepQuads: 0
+    weldVertices: 1
+    bakeAxisConversion: 0
+    preserveHierarchy: 0
+    skinWeightsMode: 0
+    maxBonesPerVertex: 4
+    minBoneWeight: 0.001
+    optimizeBones: 1
+    generateMeshLods: 0
+    meshLodGenerationFlags: 0
+    maximumMeshLod: -1
+    meshOptimizationFlags: -1
+    indexFormat: 0
+    secondaryUVAngleDistortion: 8
+    secondaryUVAreaDistortion: 15.000001
+    secondaryUVHardAngle: 88
+    secondaryUVMarginMethod: 1
+    secondaryUVMinLightmapResolution: 40
+    secondaryUVMinObjectScale: 1
+    secondaryUVPackMargin: 4
+    useFileScale: 1
+    strictVertexDataChecks: 0
+  tangentSpace:
+    normalSmoothAngle: 60
+    normalImportMode: 0
+    tangentImportMode: 3
+    normalCalculationMode: 4
+    legacyComputeAllNormalsFromSmoothingGroupsWhenMeshHasBlendShapes: 0
+    blendShapeNormalImportMode: 1
+    normalSmoothingSource: 0
+  referencedClips: []
+  importAnimation: 0
+  humanDescription:
+    serializedVersion: 3
+    human: []
+    skeleton:
+    - name: CHR_Chibi_ModularMaster(Clone)
+      parentName: 
+      position: {x: 0, y: 0, z: 0}
+      rotation: {x: 0, y: 0, z: 0, w: 1}
+      scale: {x: 1, y: 1, z: 1}
+    - name: ARM_Chibi_Base
+      parentName: CHR_Chibi_ModularMaster(Clone)
+      position: {x: -0.000000063329935, y: -0.050280213, z: 0.116305314}
+      rotation: {x: -0.00000013868446, y: -0.7071068, z: -0.7071067, w: 0.00000007686724}
+      scale: {x: 1, y: 1, z: 1}
+    - name: DEF_Hip
+      parentName: ARM_Chibi_Base
+      position: {x: 0.0000000021782838, y: 0.0066851047, z: 1.0008945}
+      rotation: {x: 0.7302554, y: -0.00000006739549, z: 0.000000056170478, w: -0.6831743}
+      scale: {x: 1, y: 0.9999999, z: 0.9999999}
+    - name: DEF_UpperLeg_L
+      parentName: DEF_Hip
+      position: {x: 0.17759764, y: 0.2693948, z: -0.0035046607}
+      rotation: {x: 0.07007909, y: -0.00000023857206, z: -0.000000016760104, w: 0.9975415}
+      scale: {x: 1, y: 1.000011, z: 1.0000111}
+    - name: DEF_LowerLeg_L
+      parentName: DEF_UpperLeg_L
+      position: {x: -0.0000000016959638, y: 0.26878867, z: -0.0000000039642103}
+      rotation: {x: -0.1409498, y: -0.00059972826, z: -0.004214693, w: 0.9900076}
+      scale: {x: 1, y: 0.9999977, z: 0.999999}
+    - name: DEF_Foot_L
+      parentName: DEF_LowerLeg_L
+      position: {x: 0.000000018029823, y: 0.35945788, z: 0.000000007244978}
+      rotation: {x: -0.66773015, y: -0.0028424615, z: -0.0031688674, w: -0.7443913}
+      scale: {x: 1, y: 1.0000025, z: 1.0000025}
+    - name: DEF_Toe_L
+      parentName: DEF_Foot_L
+      position: {x: 0.0000000034873633, y: 0.13610293, z: 0.0000000019699087}
+      rotation: {x: 0.107501164, y: -0.0010338017, z: 0.009525836, w: 0.99415886}
+      scale: {x: 1, y: 1.0000073, z: 1.0000068}
+    - name: DEF_UpperLeg_R
+      parentName: DEF_Hip
+      position: {x: -0.17759764, y: 0.2693948, z: -0.0035046053}
+      rotation: {x: 0.07007909, y: 0.00000038771708, z: 0.000000027237803, w: 0.9975415}
+      scale: {x: 1, y: 1.000011, z: 1.0000111}
+    - name: DEF_LowerLeg_R
+      parentName: DEF_UpperLeg_R
+      position: {x: 0.000000008675341, y: 0.26878867, z: -0.000000002506539}
+      rotation: {x: -0.1409498, y: 0.0005997335, z: 0.004214687, w: 0.9900076}
+      scale: {x: 1, y: 0.9999977, z: 0.99999875}
+    - name: DEF_Foot_R
+      parentName: DEF_LowerLeg_R
+      position: {x: -0.000000020547304, y: 0.35945788, z: -0.000000003635801}
+      rotation: {x: -0.66773015, y: 0.002842448, z: 0.0031688833, w: -0.7443913}
+      scale: {x: 1, y: 1.0000026, z: 1.0000017}
+    - name: DEF_Toe_R
+      parentName: DEF_Foot_R
+      position: {x: 0.000000013459083, y: 0.13610294, z: -0.0000000026342093}
+      rotation: {x: 0.107501164, y: 0.001033799, z: -0.009525813, w: 0.99415886}
+      scale: {x: 1, y: 1.0000087, z: 1.0000069}
+    - name: DEF_Spine
+      parentName: ARM_Chibi_Base
+      position: {x: 0.0000000021782838, y: 0.0066851047, z: 1.0008945}
+      rotation: {x: 0.00000019520128, y: 0.64004487, z: 0.76833755, w: 0.00000020092071}
+      scale: {x: 1.0000015, y: 1.0000018, z: 1.0000014}
+    - name: DEF_Head
+      parentName: DEF_Spine
+      position: {x: -0, y: 0.43522918, z: 0.00000002235173}
+      rotation: {x: 0.12107534, y: -2.5181636e-11, z: -0.000000028659118, w: 0.99264336}
+      scale: {x: 1.0000069, y: 0.9999996, z: 1.0000088}
+    - name: DEF_UpperArm_L
+      parentName: DEF_Spine
+      position: {x: -0.21749036, y: 0.41657475, z: -0.01517353}
+      rotation: {x: -0.5184106, y: 0.4658655, z: 0.51009494, w: 0.5040069}
+      scale: {x: 1.0000061, y: 1.0000054, z: 1.0000018}
+    - name: DEF_LowerArm_L
+      parentName: DEF_UpperArm_L
+      position: {x: -0.000000007450581, y: 0.22214496, z: -0.00000007264316}
+      rotation: {x: -0.036032572, y: -0.006199673, z: -0.06072353, w: -0.9974848}
+      scale: {x: 0.9999983, y: 0.9999998, z: 0.99999994}
+    - name: DEF_Hand_L
+      parentName: DEF_LowerArm_L
+      position: {x: -0.000000014901161, y: 0.24060896, z: -0.00000006798655}
+      rotation: {x: -0.031112405, y: 0.0039259074, z: -0.021403184, w: 0.999279}
+      scale: {x: 1.0000048, y: 1.0000023, z: 1.0000035}
+    - name: DEF_UpperArm_R
+      parentName: DEF_Spine
+      position: {x: 0.21749036, y: 0.41657472, z: -0.015173631}
+      rotation: {x: -0.518411, y: -0.46586508, z: -0.51009464, w: 0.5040072}
+      scale: {x: 1.0000027, y: 1.0000024, z: 0.99999994}
+    - name: DEF_LowerArm_R
+      parentName: DEF_UpperArm_R
+      position: {x: -0.000000014901161, y: 0.22214498, z: -0.000000052154064}
+      rotation: {x: 0.03603266, y: -0.006199628, z: -0.060724273, w: 0.9974848}
+      scale: {x: 1.0000018, y: 1.0000033, z: 1.0000008}
+    - name: DEF_Hand_R
+      parentName: DEF_LowerArm_R
+      position: {x: 0.000000007450581, y: 0.24060895, z: -0.00000006984919}
+      rotation: {x: -0.031112378, y: -0.0039259787, z: 0.021403052, w: 0.999279}
+      scale: {x: 1.0000029, y: 1.0000026, z: 1.0000031}
+    - name: CHR_Chibi_Body_Arm
+      parentName: CHR_Chibi_ModularMaster(Clone)
+      position: {x: -0.020218614, y: 0, z: 0.116305314}
+      rotation: {x: -0.7071067, y: -0.000000030908616, z: 0.000000030908623, w: 0.7071068}
+      scale: {x: 1, y: 1, z: 1}
+    - name: CHR_Chibi_Body_Hand
+      parentName: CHR_Chibi_ModularMaster(Clone)
+      position: {x: -0.020218614, y: 0, z: 0.116305314}
+      rotation: {x: -0.7071067, y: -0.000000030908616, z: 0.000000030908623, w: 0.7071068}
+      scale: {x: 1, y: 1, z: 1}
+    - name: CHR_Chibi_Body_Head
+      parentName: CHR_Chibi_ModularMaster(Clone)
+      position: {x: -0.020218614, y: 0, z: 0.116305314}
+      rotation: {x: -0.7071067, y: -0.000000030908616, z: 0.000000030908623, w: 0.7071068}
+      scale: {x: 1, y: 1, z: 1}
+    - name: CHR_Chibi_Body_Leg
+      parentName: CHR_Chibi_ModularMaster(Clone)
+      position: {x: -0.020218614, y: 0, z: 0.116305314}
+      rotation: {x: -0.7071067, y: -0.000000030908616, z: 0.000000030908623, w: 0.7071068}
+      scale: {x: 1, y: 1, z: 1}
+    - name: CHR_Chibi_Eyebrowns
+      parentName: CHR_Chibi_ModularMaster(Clone)
+      position: {x: -0.020218614, y: 0, z: 0.116305314}
+      rotation: {x: -0.7071067, y: -0.000000030908616, z: 0.000000030908623, w: 0.7071068}
+      scale: {x: 1, y: 1, z: 1}
+    - name: CHR_Chibi_Eyes
+      parentName: CHR_Chibi_ModularMaster(Clone)
+      position: {x: -0.020218614, y: 0, z: 0.116305314}
+      rotation: {x: -0.7071067, y: -0.000000030908616, z: 0.000000030908623, w: 0.7071068}
+      scale: {x: 1, y: 1, z: 1}
+    - name: CHR_Chibi_Hairstyle_1
+      parentName: CHR_Chibi_ModularMaster(Clone)
+      position: {x: -0.020218614, y: 0, z: 0.116305314}
+      rotation: {x: -0.7071067, y: -0.000000030908616, z: 0.000000030908623, w: 0.7071068}
+      scale: {x: 1, y: 1, z: 1}
+    - name: CHR_Chibi_Hairstyle_2
+      parentName: CHR_Chibi_ModularMaster(Clone)
+      position: {x: -0.020218614, y: 0, z: 0.116305314}
+      rotation: {x: -0.7071067, y: -0.000000030908616, z: 0.000000030908623, w: 0.7071068}
+      scale: {x: 1, y: 1, z: 1}
+    - name: CHR_Chibi_Hoodie
+      parentName: CHR_Chibi_ModularMaster(Clone)
+      position: {x: -0.020218614, y: 0, z: 0.116305314}
+      rotation: {x: -0.7071067, y: -0.000000030908616, z: 0.000000030908623, w: 0.7071068}
+      scale: {x: 1, y: 1, z: 1}
+    - name: CHR_Chibi_Mouth
+      parentName: CHR_Chibi_ModularMaster(Clone)
+      position: {x: -0.020218614, y: 0, z: 0.116305314}
+      rotation: {x: -0.7071067, y: -0.000000030908616, z: 0.000000030908623, w: 0.7071068}
+      scale: {x: 1, y: 1, z: 1}
+    - name: CHR_Chibi_Shoes
+      parentName: CHR_Chibi_ModularMaster(Clone)
+      position: {x: -0.020218614, y: 0, z: 0.116305314}
+      rotation: {x: -0.7071067, y: -0.000000030908616, z: 0.000000030908623, w: 0.7071068}
+      scale: {x: 1, y: 1, z: 1}
+    - name: CHR_Chibi_Shorts
+      parentName: CHR_Chibi_ModularMaster(Clone)
+      position: {x: -0.020218614, y: 0, z: 0.116305314}
+      rotation: {x: -0.7071067, y: -0.000000030908616, z: 0.000000030908623, w: 0.7071068}
+      scale: {x: 1, y: 1, z: 1}
+    - name: 'CHR_Chibi_Skirt '
+      parentName: CHR_Chibi_ModularMaster(Clone)
+      position: {x: -0.020218614, y: 0, z: 0.116305314}
+      rotation: {x: -0.7071067, y: -0.000000030908616, z: 0.000000030908623, w: 0.7071068}
+      scale: {x: 1, y: 1, z: 1}
+    - name: CHR_Chibi_Socks
+      parentName: CHR_Chibi_ModularMaster(Clone)
+      position: {x: -0.020218614, y: 0, z: 0.116305314}
+      rotation: {x: -0.7071067, y: -0.000000030908616, z: 0.000000030908623, w: 0.7071068}
+      scale: {x: 1, y: 1, z: 1}
+    - name: CHR_Chibi_Tshirt
+      parentName: CHR_Chibi_ModularMaster(Clone)
+      position: {x: -0.020218614, y: 0, z: 0.116305314}
+      rotation: {x: -0.7071067, y: -0.000000030908616, z: 0.000000030908623, w: 0.7071068}
+      scale: {x: 1, y: 1, z: 1}
+    armTwist: 0.5
+    foreArmTwist: 0.5
+    upperLegTwist: 0.5
+    legTwist: 0.5
+    armStretch: 0.05
+    legStretch: 0.05
+    feetSpacing: 0
+    globalScale: 1
+    rootMotionBoneName: 
+    hasTranslationDoF: 0
+    hasExtraRoot: 1
+    skeletonHasParents: 1
+  lastHumanDescriptionAvatarSource: {instanceID: 0}
+  autoGenerateAvatarMappingIfUnspecified: 1
+  animationType: 3
+  humanoidOversampling: 1
+  avatarSetup: 1
+  addHumanoidExtraRootOnlyWhenUsingAvatar: 1
+  importBlendShapeDeformPercent: 1
+  remapMaterialsIfMaterialImportModeIsNone: 0
+  additionalBone: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 372234
+  packageName: 3D Low-Poly Modular Chibi Everyday Citizens
+  packageVersion: 1.0.0
+  assetPath: Assets/Cookii Studio/3D Low-Poly Modular Chibi Everyday Citizens/Art/Models/CHR_Chibi_ModularMaster.fbx
+  uploadId: 896448

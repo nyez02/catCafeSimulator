@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 6d6b709c20acb1840a72d83aba78580e
+timeCreated: 1503848396
+licenseType: Store
+NativeFormatImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 86452
+  packageName: Interior Props Pack Asset
+  packageVersion: 1.0
+  assetPath: Assets/Interior Asset/Prefabs/Chair.prefab
+  uploadId: 198477

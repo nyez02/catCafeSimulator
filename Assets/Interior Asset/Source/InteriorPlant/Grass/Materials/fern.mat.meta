@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: fe70b970cbda9294fbe7a73f59e353f3
+timeCreated: 1490204838
+licenseType: Store
+NativeFormatImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 86452
+  packageName: Interior Props Pack Asset
+  packageVersion: 1.0
+  assetPath: Assets/Interior Asset/Source/InteriorPlant/Grass/Materials/fern.mat
+  uploadId: 198477
