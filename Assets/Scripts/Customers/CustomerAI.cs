@@ -1,76 +1,161 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.AI;
-using System.Collections;
 
 [RequireComponent(typeof(NavMeshAgent))]
 public class CustomerAI : MonoBehaviour
 {
     private NavMeshAgent agent;
-    
-    [Header("Cài đặt Khách hàng")]
-    public float cafeStayTime = 10f; // Thời gian khách ngồi chơi ở quán
-    public float moneyToPay = 15f;   // Số tiền khách sẽ trả
-    
-    private Transform exitPoint;
 
-    private void Start()
+    [Header("Settings")]
+    public float cafeStayTime = 8f;
+    public float basePayment = 15f;
+
+    private Transform exitPoint;
+    private TableSeat currentTable;
+
+    private void Awake()
     {
         agent = GetComponent<NavMeshAgent>();
     }
 
-    // Hàm này được gọi từ CustomerManager khi sinh ra khách
     public void Initialize(Transform exit)
     {
         exitPoint = exit;
-        StartCoroutine(CustomerRoutine());
+        StartCoroutine(CustomerLifecycleRoutine());
     }
 
-    private IEnumerator CustomerRoutine()
+    private IEnumerator CustomerLifecycleRoutine()
     {
-        // 1. Tìm một chỗ trống ngẫu nhiên trong quán để đi tới
-        Vector3 targetSpot = GetRandomCafeSpot();
-        agent.SetDestination(targetSpot);
-
-        // Đợi cho đến khi khách đi tới nơi
-        yield return new WaitUntil(() => HasArrived());
-
-        // 2. Ngồi chơi đùa với mèo / uống cà phê
-        yield return new WaitForSeconds(cafeStayTime);
-
-        // 3. Trả tiền trước khi về
-        if (MoneyManager.Instance != null)
+        // 1. Tìm bàn trống
+        TableSeat table = null;
+        if (TableManager.Instance != null)
         {
-            MoneyManager.Instance.AddMoney(moneyToPay);
+            table = TableManager.Instance.GetAvailableTable();
         }
 
-        // 4. Đi về cửa ra vào
+        if (table == null)
+        {
+            // Không có bàn, đợi một lát
+            yield return new WaitForSeconds(3f);
+            if (TableManager.Instance != null)
+            {
+                table = TableManager.Instance.GetAvailableTable();
+            }
+
+            if (table == null)
+            {
+                // Vẫn không có bàn -> Rời quán với thông báo
+                if (UIManager.Instance != null)
+                {
+                    UIManager.Instance.ShowFloatingText("Hết bàn rồi! :(", transform.position + Vector3.up * 2f, Color.red);
+                }
+                yield return LeaveCafe();
+                yield break;
+            }
+        }
+
+        // 2. Chiếm bàn và đi tới chỗ ngồi
+        currentTable = table;
+        currentTable.Occupy(this);
+
+        Vector3 sitPos = currentTable.sitPoint != null ? currentTable.sitPoint.position : currentTable.transform.position;
+        agent.SetDestination(sitPos);
+
+        yield return new WaitUntil(HasArrived);
+
+        // Xoay nhẹ theo hướng ghế
+        if (currentTable.sitPoint != null)
+        {
+            transform.rotation = currentTable.sitPoint.rotation;
+        }
+
+        // 3. Gọi món & Chờ phục vụ
+        currentTable.OrderPlaced();
+        if (UIManager.Instance != null)
+        {
+            UIManager.Instance.ShowFloatingText("☕ Order!", transform.position + Vector3.up * 2f, Color.yellow);
+        }
+
+        yield return new WaitForSeconds(2.5f); // Thời gian pha chế & bưng đồ
+
+        // Đồ ăn/cafe được dọn lên bàn
+        currentTable.ServeFood();
+
+        // 4. Thưởng thức cafe & chơi với mèo
+        yield return new WaitForSeconds(cafeStayTime);
+
+        // 5. Tính tiền & Tiền tip mèo
+        int nearbyCats = currentTable.GetNearbyCatCount();
+        float tip = nearbyCats * 10f; // Mỗi chú mèo ở gần thưởng thêm $10
+        float totalEarned = basePayment + tip;
+
+        if (MoneyManager.Instance != null)
+        {
+            MoneyManager.Instance.AddMoney(totalEarned);
+        }
+
+        if (LuckyPiggyBank.Instance != null && tip > 0)
+        {
+            LuckyPiggyBank.Instance.AddTipToHui(tip);
+        }
+
+        if (SoundManager.Instance != null)
+        {
+            SoundManager.Instance.PlayCoin();
+        }
+
+        if (UIManager.Instance != null)
+        {
+            string msg = tip > 0 ? $"+${totalEarned} (Tip Mèo!)" : $"+${totalEarned}";
+            UIManager.Instance.ShowFloatingText(msg, transform.position + Vector3.up * 2f, Color.green);
+        }
+
+        if (CatVFXManager.Instance != null)
+        {
+            CatVFXManager.Instance.SpawnCoinSparkle(transform.position + Vector3.up * 1f);
+        }
+
+        // 6. Rời bàn và về cửa
+        currentTable.ReleaseSeat();
+        currentTable = null;
+
+        yield return LeaveCafe();
+    }
+
+    private IEnumerator LeaveCafe()
+    {
         if (exitPoint != null)
         {
             agent.SetDestination(exitPoint.position);
-            yield return new WaitUntil(() => HasArrived());
+            yield return new WaitUntil(HasArrived);
         }
 
-        // Xóa object khi khách đã ra khỏi cửa
-        Destroy(gameObject);
+        if (CustomerManager.Instance != null)
+        {
+            CustomerManager.Instance.OnCustomerLeft();
+        }
+
+        if (ObjectPoolManager.Instance != null)
+        {
+            ObjectPoolManager.Instance.ReturnCustomer(gameObject);
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
     }
 
     private bool HasArrived()
     {
-        // Kiểm tra xem Agent đã tới đích chưa
         return !agent.pathPending && agent.remainingDistance <= agent.stoppingDistance;
     }
 
-    private Vector3 GetRandomCafeSpot()
+    private void OnDestroy()
     {
-        // Lấy ngẫu nhiên 1 điểm trên NavMesh để khách đi tới
-        // Trong thực tế bạn có thể thay thế bằng việc tìm "Bàn trống" (Empty Table)
-        Vector3 randomDirection = Random.insideUnitSphere * 15f;
-        randomDirection += transform.position;
-        NavMeshHit hit;
-        if (NavMesh.SamplePosition(randomDirection, out hit, 15f, NavMesh.AllAreas))
+        if (currentTable != null)
         {
-            return hit.position;
+            currentTable.ReleaseSeat();
         }
-        return transform.position; // Trả về vị trí hiện tại nếu không tìm thấy
     }
 }

@@ -1,42 +1,91 @@
-using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
 
 public class CustomerManager : MonoBehaviour
 {
-    [Header("Cài đặt Khách hàng")]
-    public GameObject customerPrefab; // Vật thể khách hàng
-    public Transform spawnPoint;      // Điểm khách xuất hiện (Cửa ra vào)
-    public float spawnInterval = 10f; // Cứ 10 giây có 1 khách
+    public static CustomerManager Instance { get; private set; }
+
+    [Header("Customer Settings")]
+    public GameObject defaultCustomerPrefab;
+    public List<GameObject> customerPrefabs = new List<GameObject>();
+    public Transform spawnPoint;
+    public float spawnInterval = 8f;
+    public int maxConcurrentCustomers = 6;
+
+    private int currentCustomerCount = 0;
+
+    private void Awake()
+    {
+        if (Instance != null && Instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+        Instance = this;
+    }
 
     private void Start()
     {
-        // Bắt đầu vòng lặp sinh ra khách hàng liên tục
-        if (customerPrefab != null && spawnPoint != null)
+        if (spawnPoint == null)
         {
-            StartCoroutine(SpawnCustomerRoutine());
+            spawnPoint = transform;
         }
-        else
-        {
-            Debug.LogWarning("Chưa gắn CustomerPrefab hoặc SpawnPoint trong Inspector!");
-        }
+
+        StartCoroutine(SpawnCustomerRoutine());
     }
 
     private IEnumerator SpawnCustomerRoutine()
     {
-        while (true) // Chạy mãi mãi
+        while (true)
         {
-            // Sinh ra 1 khách hàng mới tại vị trí cửa ra vào
-            GameObject newCustomer = Instantiate(customerPrefab, spawnPoint.position, spawnPoint.rotation);
-            
-            // Lấy script CustomerAI và gọi hàm khởi tạo để truyền vị trí cửa về
-            CustomerAI ai = newCustomer.GetComponent<CustomerAI>();
-            if (ai != null)
-            {
-                ai.Initialize(spawnPoint);
-            }
-            
-            // Chờ 1 khoảng thời gian rồi mới sinh ra khách tiếp theo
             yield return new WaitForSeconds(spawnInterval);
+
+            // Chỉ sinh khách nếu chưa vượt quá số lượng tối đa và có bàn hoặc sắp có bàn
+            if (currentCustomerCount < maxConcurrentCustomers)
+            {
+                SpawnCustomer();
+            }
         }
+    }
+
+    public void SpawnCustomer()
+    {
+        GameObject prefabToSpawn = GetRandomCustomerPrefab();
+        if (prefabToSpawn == null || spawnPoint == null) return;
+
+        GameObject customerObj = null;
+        if (ObjectPoolManager.Instance != null)
+        {
+            customerObj = ObjectPoolManager.Instance.GetCustomer(prefabToSpawn, spawnPoint.position, spawnPoint.rotation);
+        }
+        else
+        {
+            customerObj = Instantiate(prefabToSpawn, spawnPoint.position, spawnPoint.rotation);
+        }
+
+        currentCustomerCount++;
+
+        CustomerAI ai = customerObj.GetComponent<CustomerAI>();
+        if (ai == null)
+        {
+            ai = customerObj.AddComponent<CustomerAI>();
+        }
+
+        ai.Initialize(spawnPoint);
+    }
+
+    private GameObject GetRandomCustomerPrefab()
+    {
+        if (customerPrefabs != null && customerPrefabs.Count > 0)
+        {
+            return customerPrefabs[Random.Range(0, customerPrefabs.Count)];
+        }
+        return defaultCustomerPrefab;
+    }
+
+    public void OnCustomerLeft()
+    {
+        currentCustomerCount = Mathf.Max(0, currentCustomerCount - 1);
     }
 }

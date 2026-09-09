@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 29df30c8ef234df0ad53de52fa990022, type: 3}
+  m_Name: Level3_DowntownBistro
+  m_EditorClassIdentifier: Assembly-CSharp::LevelData
+  levelId: 3
+  levelName: "Ti\u1EC7m B\xE1nh & C\xE0 Ph\xEA M\xE8o Trung T\xE2m"
+  description: "Lounge c\xE0 ph\xEA m\xE8o cao c\u1EA5p, ph\u1EE5c v\u1EE5 kh\xE1ch VIP v\xE0 gi\u1EDD cao \u0111i\u1EC3m s\xF4i \u0111\u1ED9ng."
+  thumbnail: {fileID: 0}
+  shiftDurationSeconds: 150
+  rushHourStartTime: 50
+  rushHourDuration: 45
+  rushHourSpawnInterval: 2.5
+  targetRevenue1Star: 500
+  targetRevenue2Star: 1000
+  targetRevenue3Star: 1800
+  completionGems: 50
+  completionBonusMoney: 300
