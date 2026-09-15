@@ -43,12 +43,21 @@ public class LevelManager : MonoBehaviour
         }
     }
 
+    private int lastBroadcastRemainingSeconds = -1;
+
     private void Update()
     {
         if (!isShiftRunning || currentLevel == null) return;
 
         currentShiftTimer += Time.deltaTime;
-        OnShiftTimeUpdated?.Invoke(currentShiftTimer, currentLevel.shiftDurationSeconds);
+
+        // Tối ưu hóa UI: Chỉ kích hoạt sự kiện khi số giây nguyên thay đổi (1 lần/giây thay vì 60 lần/giây)
+        int remainingSeconds = Mathf.CeilToInt(Mathf.Max(0, currentLevel.shiftDurationSeconds - currentShiftTimer));
+        if (remainingSeconds != lastBroadcastRemainingSeconds)
+        {
+            lastBroadcastRemainingSeconds = remainingSeconds;
+            OnShiftTimeUpdated?.Invoke(currentShiftTimer, currentLevel.shiftDurationSeconds);
+        }
 
         // Tính doanh thu trong ca
         if (MoneyManager.Instance != null)
@@ -67,7 +76,9 @@ public class LevelManager : MonoBehaviour
 
             if (isRushHour && UIManager.Instance != null)
             {
-                UIManager.Instance.ShowFloatingText("🔥 GIỜ CAO ĐIỂM! KHÁCH TỚI ĐÔNG!", Camera.main.transform.position + Camera.main.transform.forward * 2.5f, Color.red);
+                Camera cam = Camera.main;
+                Vector3 promptPos = cam != null ? cam.transform.position + cam.transform.forward * 2.5f : Vector3.zero;
+                UIManager.Instance.ShowFloatingText("🔥 GIỜ CAO ĐIỂM! KHÁCH TỚI ĐÔNG!", promptPos, Color.red);
             }
         }
 
@@ -115,6 +126,13 @@ public class LevelManager : MonoBehaviour
             }
         }
 
+        if (stars >= 3 && CatVFXManager.Instance != null)
+        {
+            Camera cam = Camera.main;
+            Vector3 vfxPos = cam != null ? cam.transform.position + cam.transform.forward * 2.5f : Vector3.zero;
+            CatVFXManager.Instance.SpawnConfettiCelebration(vfxPos);
+        }
+
         OnShiftCompleted?.Invoke(stars, currentShiftRevenue);
 
         SaveManager.Instance?.SaveGame();
@@ -139,9 +157,18 @@ public class LevelManager : MonoBehaviour
             cafeLevel++;
             expToNextLevel = Mathf.RoundToInt(expToNextLevel * 1.35f);
 
+            if (CatVFXManager.Instance != null)
+            {
+                Camera cam = Camera.main;
+                Vector3 vfxPos = cam != null ? cam.transform.position + cam.transform.forward * 2f : Vector3.zero;
+                CatVFXManager.Instance.SpawnConfettiCelebration(vfxPos);
+            }
+
             if (UIManager.Instance != null)
             {
-                UIManager.Instance.ShowFloatingText($"🎉 LÊN CẤP QUÁN: LV.{cafeLevel}!", Camera.main.transform.position + Camera.main.transform.forward * 2f, Color.cyan);
+                Camera cam = Camera.main;
+                Vector3 promptPos = cam != null ? cam.transform.position + cam.transform.forward * 2f : Vector3.zero;
+                UIManager.Instance.ShowFloatingText($"🎉 LÊN CẤP QUÁN: LV.{cafeLevel}!", promptPos, Color.cyan);
             }
         }
     }

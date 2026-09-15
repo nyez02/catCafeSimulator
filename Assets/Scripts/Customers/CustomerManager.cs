@@ -27,12 +27,43 @@ public class CustomerManager : MonoBehaviour
 
     private void Start()
     {
-        if (spawnPoint == null)
-        {
-            spawnPoint = transform;
-        }
-
+        EnsureSpawnPoint();
+        EnsureCustomerPrefabs();
         StartCoroutine(SpawnCustomerRoutine());
+    }
+
+    private void EnsureSpawnPoint()
+    {
+        if (spawnPoint == null || spawnPoint == transform)
+        {
+            GameObject entranceObj = GameObject.Find("Entrance_SpawnPoint");
+            if (entranceObj == null)
+            {
+                entranceObj = new GameObject("Entrance_SpawnPoint");
+                entranceObj.transform.position = new Vector3(0f, 0.05f, -15.5f);
+            }
+            spawnPoint = entranceObj.transform;
+        }
+    }
+
+    private void EnsureCustomerPrefabs()
+    {
+        if (customerPrefabs.Count == 0 && defaultCustomerPrefab == null)
+        {
+            // Tự động tìm kiếm các prefab nhân vật khách trong Resources hoặc gói PartyCharacters
+            var allPrefabs = Resources.FindObjectsOfTypeAll<GameObject>();
+            foreach (var p in allPrefabs)
+            {
+                if (p.name.StartsWith("Character_") && !p.name.Contains("Clone") && p.scene.name == null)
+                {
+                    if (!customerPrefabs.Contains(p)) customerPrefabs.Add(p);
+                }
+            }
+            if (customerPrefabs.Count > 0)
+            {
+                defaultCustomerPrefab = customerPrefabs[0];
+            }
+        }
     }
 
     private IEnumerator SpawnCustomerRoutine()
@@ -72,7 +103,13 @@ public class CustomerManager : MonoBehaviour
             ai = customerObj.AddComponent<CustomerAI>();
         }
 
-        ai.Initialize(spawnPoint);
+        bool isVIP = Random.value < 0.15f; // 15% cơ hội xuất hiện khách VIP
+        ai.Initialize(spawnPoint, isVIP);
+
+        if (isVIP && UIManager.Instance != null)
+        {
+            UIManager.Instance.ShowFloatingText("👑 KHÁCH VIP ĐÃ ĐẾN!", spawnPoint.position + Vector3.up * 2.2f, Color.yellow);
+        }
     }
 
     private GameObject GetRandomCustomerPrefab()

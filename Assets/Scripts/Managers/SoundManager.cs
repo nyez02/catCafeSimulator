@@ -14,6 +14,11 @@ public class SoundManager : MonoBehaviour
     public AudioClip meowSound;
     public AudioClip clickSound;
 
+    private AudioClip cachedMeowClip;
+    private AudioClip cachedCoinClip;
+    private AudioClip cachedBeepClip;
+    private AudioClip cachedLofiBgmClip;
+
     private void Awake()
     {
         if (Instance != null && Instance != this)
@@ -25,6 +30,7 @@ public class SoundManager : MonoBehaviour
         DontDestroyOnLoad(gameObject);
 
         EnsureAudioSources();
+        PrecacheProceduralAudio();
     }
 
     private void Start()
@@ -32,33 +38,89 @@ public class SoundManager : MonoBehaviour
         PlayBGM();
     }
 
+    private void PrecacheProceduralAudio()
+    {
+        // Khởi tạo trước và lưu bộ nhớ đệm (Cache) để tránh Memory Leak và GC Alloc
+        if (meowSound == null && cachedMeowClip == null)
+        {
+            cachedMeowClip = GenerateRealisticCatMeowClip();
+        }
+
+        if (coinSound == null && cachedCoinClip == null)
+        {
+            cachedCoinClip = GenerateRealisticCoinChimeClip();
+        }
+
+        if (clickSound == null && cachedBeepClip == null)
+        {
+            cachedBeepClip = GenerateProceduralBeepClip(523.25f, 0.04f);
+        }
+
+        if (backgroundMusic == null && cachedLofiBgmClip == null)
+        {
+            cachedLofiBgmClip = GenerateProceduralLofiBGM();
+        }
+    }
+
+    private const string PREFS_BGM_VOL = "Sound_BGM_Volume";
+    private const string PREFS_SFX_VOL = "Sound_SFX_Volume";
+
+    public float BGMVolume { get; private set; } = 0.5f;
+    public float SFXVolume { get; private set; } = 0.8f;
+
     private void EnsureAudioSources()
     {
+        BGMVolume = PlayerPrefs.GetFloat(PREFS_BGM_VOL, 0.5f);
+        SFXVolume = PlayerPrefs.GetFloat(PREFS_SFX_VOL, 0.8f);
+
         if (bgmSource == null)
         {
             bgmSource = gameObject.AddComponent<AudioSource>();
             bgmSource.loop = true;
-            bgmSource.volume = 0.35f;
         }
+        bgmSource.volume = BGMVolume;
 
         if (sfxSource == null)
         {
             sfxSource = gameObject.AddComponent<AudioSource>();
-            sfxSource.volume = 0.75f;
         }
+        sfxSource.volume = SFXVolume;
+    }
+
+    public void SetBGMVolume(float volume)
+    {
+        BGMVolume = Mathf.Clamp01(volume);
+        if (bgmSource != null)
+        {
+            bgmSource.volume = BGMVolume;
+        }
+        PlayerPrefs.SetFloat(PREFS_BGM_VOL, BGMVolume);
+        PlayerPrefs.Save();
+    }
+
+    public void SetSFXVolume(float volume)
+    {
+        SFXVolume = Mathf.Clamp01(volume);
+        if (sfxSource != null)
+        {
+            sfxSource.volume = SFXVolume;
+        }
+        PlayerPrefs.SetFloat(PREFS_SFX_VOL, SFXVolume);
+        PlayerPrefs.Save();
     }
 
     public void PlayBGM()
     {
-        if (backgroundMusic != null && bgmSource != null)
+        if (bgmSource == null) return;
+
+        if (backgroundMusic != null)
         {
             bgmSource.clip = backgroundMusic;
             bgmSource.Play();
         }
-        else if (bgmSource != null)
+        else if (cachedLofiBgmClip != null)
         {
-            // Tự động tạo bản nhạc nền Lofi Cafe thư giãn
-            bgmSource.clip = GenerateProceduralLofiBGM();
+            bgmSource.clip = cachedLofiBgmClip;
             bgmSource.Play();
         }
     }
@@ -69,10 +131,9 @@ public class SoundManager : MonoBehaviour
         {
             sfxSource?.PlayOneShot(coinSound);
         }
-        else
+        else if (cachedCoinClip != null)
         {
-            // Âm thanh chuông vàng 2 tầng sóng ngân vang trong trẻo
-            PlayRealisticCoinChime();
+            sfxSource?.PlayOneShot(cachedCoinClip);
         }
     }
 
@@ -82,10 +143,9 @@ public class SoundManager : MonoBehaviour
         {
             sfxSource?.PlayOneShot(meowSound);
         }
-        else
+        else if (cachedMeowClip != null)
         {
-            // Thuật toán tổng hợp tiếng mèo meow uốn lượn cao độ chân thật
-            PlayRealisticCatMeow();
+            sfxSource?.PlayOneShot(cachedMeowClip);
         }
     }
 
@@ -95,16 +155,16 @@ public class SoundManager : MonoBehaviour
         {
             sfxSource?.PlayOneShot(clickSound);
         }
-        else
+        else if (cachedBeepClip != null)
         {
-            PlayProceduralBeep(523.25f, 0.04f); // Note C5 click
+            sfxSource?.PlayOneShot(cachedBeepClip);
         }
     }
 
     /// <summary>
-    /// Thuật toán mô phỏng tiếng kêu mèo con 'Meo-w' với dải tần uốn lượn tự nhiên
+    /// Thuật toán tổng hợp tiếng kêu mèo con 'Meo-w' tạo 1 lần duy nhất
     /// </summary>
-    private void PlayRealisticCatMeow()
+    private AudioClip GenerateRealisticCatMeowClip()
     {
         int sampleRate = 44100;
         float duration = 0.55f;
@@ -117,54 +177,31 @@ public class SoundManager : MonoBehaviour
             float t = (float)i / sampleRate;
             float progress = t / duration;
 
-            // Đường cong cao độ: 420Hz -> 760Hz -> 380Hz
-            float freq;
-            if (progress < 0.4f)
-            {
-                freq = Mathf.Lerp(420f, 760f, progress / 0.4f);
-            }
-            else
-            {
-                freq = Mathf.Lerp(760f, 380f, (progress - 0.4f) / 0.6f);
-            }
+            float freq = (progress < 0.4f)
+                ? Mathf.Lerp(420f, 760f, progress / 0.4f)
+                : Mathf.Lerp(760f, 380f, (progress - 0.4f) / 0.6f);
 
-            // Rung giọng mèo nhẹ (vibrato 6Hz)
             float vibrato = Mathf.Sin(2 * Mathf.PI * 6f * t) * 15f;
             freq += vibrato;
 
-            // Tích hợp pha tần số
             phase += 2 * Mathf.PI * freq / sampleRate;
 
-            // Khung biên độ mượt (attack - sustain - decay)
-            float envelope;
-            if (progress < 0.15f)
-            {
-                envelope = progress / 0.15f;
-            }
-            else if (progress < 0.7f)
-            {
-                envelope = 1f;
-            }
-            else
-            {
-                envelope = 1f - (progress - 0.7f) / 0.3f;
-            }
+            float envelope = (progress < 0.15f) ? (progress / 0.15f) : ((progress < 0.7f) ? 1f : (1f - (progress - 0.7f) / 0.3f));
 
-            // Hài âm formant để giọng kêu ấm
             float fundamental = Mathf.Sin(phase);
             float harmonic = Mathf.Sin(phase * 2f) * 0.35f;
             samples[i] = (fundamental + harmonic) * envelope * 0.32f;
         }
 
-        AudioClip clip = AudioClip.Create("MeowSFX", sampleCount, 1, sampleRate, false);
+        AudioClip clip = AudioClip.Create("CachedMeowSFX", sampleCount, 1, sampleRate, false);
         clip.SetData(samples, 0);
-        sfxSource?.PlayOneShot(clip);
+        return clip;
     }
 
     /// <summary>
-    /// Tiếng chuông vàng 2 nốt hòa âm ngân vang
+    /// Tiếng chuông vàng tạo 1 lần duy nhất
     /// </summary>
-    private void PlayRealisticCoinChime()
+    private AudioClip GenerateRealisticCoinChimeClip()
     {
         int sampleRate = 44100;
         float duration = 0.38f;
@@ -177,15 +214,15 @@ public class SoundManager : MonoBehaviour
         for (int i = 0; i < sampleCount; i++)
         {
             float t = (float)i / sampleRate;
-            float envelope = Mathf.Exp(-7f * t); // Decay hàm mũ ngân vang
+            float envelope = Mathf.Exp(-7f * t);
             float tone1 = Mathf.Sin(2 * Mathf.PI * f1 * t);
             float tone2 = Mathf.Sin(2 * Mathf.PI * f2 * t) * 0.7f;
             samples[i] = (tone1 + tone2) * envelope * 0.25f;
         }
 
-        AudioClip clip = AudioClip.Create("CoinChimeSFX", sampleCount, 1, sampleRate, false);
+        AudioClip clip = AudioClip.Create("CachedCoinChimeSFX", sampleCount, 1, sampleRate, false);
         clip.SetData(samples, 0);
-        sfxSource?.PlayOneShot(clip);
+        return clip;
     }
 
     /// <summary>
@@ -199,13 +236,12 @@ public class SoundManager : MonoBehaviour
         int sampleCount = (int)(sampleRate * totalDuration);
         float[] samples = new float[sampleCount];
 
-        // Tần số các nốt trong 4 hợp âm Lofi ấm áp
         float[][] chords = new float[][]
         {
-            new float[] { 261.63f, 329.63f, 392.00f, 493.88f }, // Cmaj7 (C4, E4, G4, B4)
-            new float[] { 220.00f, 261.63f, 329.63f, 392.00f }, // Am7 (A3, C4, E4, G4)
-            new float[] { 293.66f, 349.23f, 440.00f, 523.25f }, // Dm7 (D4, F4, A4, C5)
-            new float[] { 196.00f, 246.94f, 293.66f, 349.23f }  // G7 (G3, B3, D4, F4)
+            new float[] { 261.63f, 329.63f, 392.00f, 493.88f }, // Cmaj7
+            new float[] { 220.00f, 261.63f, 329.63f, 392.00f }, // Am7
+            new float[] { 293.66f, 349.23f, 440.00f, 523.25f }, // Dm7
+            new float[] { 196.00f, 246.94f, 293.66f, 349.23f }  // G7
         };
 
         for (int i = 0; i < sampleCount; i++)
@@ -232,7 +268,7 @@ public class SoundManager : MonoBehaviour
         return bgmClip;
     }
 
-    private void PlayProceduralBeep(float frequency, float duration)
+    private AudioClip GenerateProceduralBeepClip(float frequency, float duration)
     {
         int sampleRate = 44100;
         int sampleCount = (int)(sampleRate * duration);
@@ -245,8 +281,8 @@ public class SoundManager : MonoBehaviour
             samples[i] = Mathf.Sin(2 * Mathf.PI * frequency * t) * envelope * 0.25f;
         }
 
-        AudioClip clip = AudioClip.Create("Beep", sampleCount, 1, sampleRate, false);
+        AudioClip clip = AudioClip.Create("CachedBeep", sampleCount, 1, sampleRate, false);
         clip.SetData(samples, 0);
-        sfxSource?.PlayOneShot(clip);
+        return clip;
     }
 }

@@ -22,7 +22,7 @@ public class CatCafeSetupTool : Editor
             Undo.RegisterCreatedObjectUndo(managersObj, undoName);
         }
 
-        // 2. Gắn đầy đủ các Manager
+        // 2. Gắn đầy đủ toàn bộ hệ sinh thái Managers (22 Managers)
         MoneyManager moneyMgr = GetOrAddComponent<MoneyManager>(managersObj);
         SaveManager saveMgr = GetOrAddComponent<SaveManager>(managersObj);
         UIManager uiMgr = GetOrAddComponent<UIManager>(managersObj);
@@ -32,6 +32,10 @@ public class CatCafeSetupTool : Editor
         TableManager tableMgr = GetOrAddComponent<TableManager>(managersObj);
         ShopManager shopMgr = GetOrAddComponent<ShopManager>(managersObj);
         SoundManager soundMgr = GetOrAddComponent<SoundManager>(managersObj);
+        if (soundMgr.backgroundMusic == null) soundMgr.backgroundMusic = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/bgm_lofi.wav");
+        if (soundMgr.meowSound == null) soundMgr.meowSound = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/cat_meow.wav");
+        if (soundMgr.coinSound == null) soundMgr.coinSound = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/coin.wav");
+        if (soundMgr.clickSound == null) soundMgr.clickSound = AssetDatabase.LoadAssetAtPath<AudioClip>("Assets/Audio/click.wav");
         CustomerManager customerMgr = GetOrAddComponent<CustomerManager>(managersObj);
         LuckyPiggyBank piggyBank = GetOrAddComponent<LuckyPiggyBank>(managersObj);
         AchievementManager achMgr = GetOrAddComponent<AchievementManager>(managersObj);
@@ -41,17 +45,54 @@ public class CatCafeSetupTool : Editor
         PerformanceManager perfMgr = GetOrAddComponent<PerformanceManager>(managersObj);
         PlatformManager platMgr = GetOrAddComponent<PlatformManager>(managersObj);
 
-        // 3. Tự động nạp Prefab Mèo & Giống Mèo
+        // Các Manager nâng cao mới:
+        FirebaseManager firebaseMgr = GetOrAddComponent<FirebaseManager>(managersObj);
+        AdsManager adsMgr = GetOrAddComponent<AdsManager>(managersObj);
+        DecorationManager decorMgr = GetOrAddComponent<DecorationManager>(managersObj);
+        DecorationVisualSpawner decorSpawner = GetOrAddComponent<DecorationVisualSpawner>(managersObj);
+        DailyQuestManager questMgr = GetOrAddComponent<DailyQuestManager>(managersObj);
+        CatVFXManager vfxMgr = GetOrAddComponent<CatVFXManager>(managersObj);
+        UIThemeManager themeMgr = GetOrAddComponent<UIThemeManager>(managersObj);
+        StaffManager staffMgr = GetOrAddComponent<StaffManager>(managersObj);
+        ToastManager toastMgr = GetOrAddComponent<ToastManager>(managersObj);
+        LoadingScreenUI loadingUI = GetOrAddComponent<LoadingScreenUI>(managersObj);
+
+        // Social & Multiplayer Managers
+        CatCafe.Social.FriendManager friendMgr = GetOrAddComponent<CatCafe.Social.FriendManager>(managersObj);
+        CatCafe.Social.ChatManager chatMgr = GetOrAddComponent<CatCafe.Social.ChatManager>(managersObj);
+        CatCafe.Social.GiftManager giftMgr = GetOrAddComponent<CatCafe.Social.GiftManager>(managersObj);
+        CatCafe.Maps.CafeMapThemeManager mapThemeMgr = GetOrAddComponent<CatCafe.Maps.CafeMapThemeManager>(managersObj);
+
+        // Kết nối tham chiếu UI
+        if (uiMgr != null)
+        {
+            uiMgr.decorationShopUI = GetOrAddComponent<DecorationShopUI>(managersObj);
+            uiMgr.dailyQuestUI = GetOrAddComponent<DailyQuestUI>(managersObj);
+            uiMgr.leaderboardUI = GetOrAddComponent<LeaderboardUI>(managersObj);
+            uiMgr.staffShopUI = GetOrAddComponent<StaffShopUI>(managersObj);
+            uiMgr.settingsUI = GetOrAddComponent<SettingsUI>(managersObj);
+
+            // Thiết lập và khởi tạo Modern HUD cho Canvas
+            uiMgr.EnsureModernHUD();
+        }
+
+        // 3. Tự động nạp Prefab Mèo & Toàn bộ danh mục giống mèo
         GameObject defaultCat = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/LittleFriends-CartoonAnimals-Lite/Prefabs/LittleCat_Idle.prefab");
         if (defaultCat != null)
         {
             catMgr.defaultCatPrefab = defaultCat;
         }
 
-        CatData meoTamThe = AssetDatabase.LoadAssetAtPath<CatData>("Assets/MeoTamThe.asset");
-        if (meoTamThe != null && !catMgr.availableBreeds.Contains(meoTamThe))
+        catMgr.availableBreeds.Clear();
+        string[] catDataGuids = AssetDatabase.FindAssets("t:CatData", new[] { "Assets" });
+        foreach (string guid in catDataGuids)
         {
-            catMgr.availableBreeds.Add(meoTamThe);
+            string path = AssetDatabase.GUIDToAssetPath(guid);
+            CatData cat = AssetDatabase.LoadAssetAtPath<CatData>(path);
+            if (cat != null && !catMgr.availableBreeds.Contains(cat))
+            {
+                catMgr.availableBreeds.Add(cat);
+            }
         }
 
         // 4. Tự động nạp Khách Hàng (Customer Prefabs)
@@ -98,7 +139,6 @@ public class CatCafeSetupTool : Editor
                 TableSeat seat = GetOrAddComponent<TableSeat>(obj);
                 if (seat.sitPoint == null)
                 {
-                    // Tạo một SitPoint trước mặt bàn nếu chưa có
                     Transform existingSit = obj.transform.Find("SitPoint");
                     if (existingSit == null)
                     {
@@ -116,11 +156,38 @@ public class CatCafeSetupTool : Editor
             }
         }
 
-        // 7. Đánh dấu Scene đã sửa đổi và lưu
+        // 7. Tự động xây dựng Map Quán Cafe 3D hoàn chỉnh
+        CozyCafeMapBuilder.BuildCozyCafeMap();
+
+        // 8. Đảm bảo EditorBuildSettings chứa đủ MainMenu và CafeScene
+        EnsureBuildScenes();
+
+        // 8. Đánh dấu Scene đã sửa đổi và lưu
         UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene());
 
-        Debug.Log($"===> [CatCafeSetupTool] HOÀN TẤT THÀNH CÔNG! Đã gắn kết 17 Managers, {customerMgr.customerPrefabs.Count} mẫu khách hàng, {levelMgr.allLevels.Count} màn chơi và cấu hình {tablesConfigured} bàn cafe.");
-        EditorUtility.DisplayDialog("Cat Cafe Simulator", $"Thiết lập thành công 100%!\n- Đã gắn toàn bộ 17 Managers trên MANAGERS\n- Đã nạp {customerMgr.customerPrefabs.Count} mẫu khách hàng\n- Đã nạp {levelMgr.allLevels.Count} màn chơi\n- Đã kết nối {tablesConfigured} bàn cafe trong quán.\n\nBây giờ bạn có thể bấm Play để chơi ngay!", "Tuyệt vời!");
+        Debug.Log($"===> [CatCafeSetupTool] THÀNH CÔNG RỰC RỠ! Đã gắn kết toàn bộ Managers, {catMgr.availableBreeds.Count} giống mèo, {customerMgr.customerPrefabs.Count} mẫu khách hàng, {levelMgr.allLevels.Count} màn chơi và {tablesConfigured} bàn cafe.");
+        EditorUtility.DisplayDialog("Cat Cafe Simulator", $"Thiết lập toàn diện thành công 100%!\n- Đã gắn toàn bộ Managers, Spawners, Toasts & Staff trên MANAGERS\n- Đã nạp {catMgr.availableBreeds.Count} giống mèo mới\n- Đã nạp {customerMgr.customerPrefabs.Count} mẫu khách hàng (bao gồm VIP)\n- Đã nạp {levelMgr.allLevels.Count} màn chơi\n- Đã cấu hình {tablesConfigured} bàn cafe\n- Đã kiểm tra danh sách Scenes trong Build Settings.\n\nBây giờ bạn có thể bấm Play để trải nghiệm ngay lập tức!", "Tuyệt vời!");
+    }
+
+    private static void EnsureBuildScenes()
+    {
+        List<EditorBuildSettingsScene> scenes = new List<EditorBuildSettingsScene>(EditorBuildSettings.scenes);
+        string[] requiredPaths = new string[] { "Assets/Scenes/MainMenu.unity", "Assets/CafeScene.unity" };
+
+        bool changed = false;
+        foreach (string path in requiredPaths)
+        {
+            if (!scenes.Exists(s => s.path == path))
+            {
+                scenes.Add(new EditorBuildSettingsScene(path, true));
+                changed = true;
+            }
+        }
+
+        if (changed)
+        {
+            EditorBuildSettings.scenes = scenes.ToArray();
+        }
     }
 
     private static T GetOrAddComponent<T>(GameObject target) where T : Component

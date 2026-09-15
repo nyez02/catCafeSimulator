@@ -122,6 +122,12 @@ public class ObjectPoolManager : MonoBehaviour
             customer.transform.position = position;
             customer.transform.rotation = rotation;
             customer.SetActive(true);
+
+            UnityEngine.AI.NavMeshAgent agent = customer.GetComponent<UnityEngine.AI.NavMeshAgent>();
+            if (agent != null)
+            {
+                agent.Warp(position);
+            }
         }
 
         return customer;

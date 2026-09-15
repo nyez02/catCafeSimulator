@@ -26,15 +26,30 @@ public class FloatingText : MonoBehaviour
         timer = 0f;
     }
 
+    private static Camera cachedMainCamera;
+
+    private static Camera MainCamera
+    {
+        get
+        {
+            if (cachedMainCamera == null)
+            {
+                cachedMainCamera = Camera.main;
+            }
+            return cachedMainCamera;
+        }
+    }
+
     private void Update()
     {
         // Bay lên
         transform.position += Vector3.up * (floatSpeed * Time.deltaTime);
 
-        // Luôn quay mặt về Camera
-        if (Camera.main != null)
+        // Luôn quay mặt về Camera (Đã tối ưu cache, không quét FindWithTag mỗi frame)
+        Camera cam = MainCamera;
+        if (cam != null)
         {
-            transform.rotation = Quaternion.LookRotation(transform.position - Camera.main.transform.position);
+            transform.rotation = Quaternion.LookRotation(transform.position - cam.transform.position);
         }
 
         // Mờ dần

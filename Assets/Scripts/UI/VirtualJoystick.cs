@@ -2,25 +2,30 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
-public class VirtualJoystick : MonoBehaviour, IPointerDownHandler, IDragHandler, IPointerUpHandler
+/// <summary>
+/// Virtual Joystick cho Mobile & Touchscreen.
+/// Hỗ trợ kéo thả ngón tay/chuột mượt mà, tự động ẩn trên PC nếu muốn.
+/// </summary>
+public class VirtualJoystick : MonoBehaviour, IDragHandler, IPointerUpHandler, IPointerDownHandler
 {
     public static VirtualJoystick Instance { get; private set; }
 
-    [Header("Joystick Visual Components")]
-    public RectTransform joystickBackground;
-    public RectTransform joystickHandle;
+    [Header("UI References")]
+    [SerializeField] private RectTransform backgroundRect;
+    [SerializeField] private RectTransform handleRect;
 
     [Header("Settings")]
-    public float handleRange = 65f;
-    public bool isFloatingJoystick = false; // Tự động nhảy tới vị trí ngón tay chạm
+    [SerializeField] private float handleRange = 70f;
+    [SerializeField] private bool autoHideOnStandalone = false;
 
     private Vector2 inputVector = Vector2.zero;
     private Canvas parentCanvas;
-    private Vector2 defaultBackgroundPosition;
 
+    public Vector2 InputDirection => inputVector;
     public Vector2 Direction => inputVector;
     public float Horizontal => inputVector.x;
     public float Vertical => inputVector.y;
+    public bool IsActive => inputVector.sqrMagnitude > 0.001f;
 
     private void Awake()
     {
@@ -32,75 +37,56 @@ public class VirtualJoystick : MonoBehaviour, IPointerDownHandler, IDragHandler,
         Instance = this;
 
         parentCanvas = GetComponentInParent<Canvas>();
-        if (joystickBackground != null)
+        if (backgroundRect == null) backgroundRect = GetComponent<RectTransform>();
+        if (handleRect == null && transform.childCount > 0)
         {
-            defaultBackgroundPosition = joystickBackground.anchoredPosition;
+            handleRect = transform.GetChild(0) as RectTransform;
+        }
+
+        // Tự động kiểm tra nếu là PC thuần thì có thể để mờ hoặc ẩn
+        if (autoHideOnStandalone && Application.platform == RuntimePlatform.WindowsPlayer)
+        {
+            gameObject.SetActive(false);
         }
     }
 
     public void OnPointerDown(PointerEventData eventData)
     {
-        if (isFloatingJoystick && joystickBackground != null && parentCanvas != null)
-        {
-            RectTransformUtility.ScreenPointToLocalPointInRectangle(
-                parentCanvas.transform as RectTransform,
-                eventData.position,
-                eventData.pressEventCamera,
-                out Vector2 localPoint
-            );
-            joystickBackground.anchoredPosition = localPoint;
-        }
-
         OnDrag(eventData);
     }
 
     public void OnDrag(PointerEventData eventData)
     {
-        if (joystickBackground == null || joystickHandle == null) return;
+        if (backgroundRect == null || handleRect == null) return;
 
-        Camera cam = (parentCanvas != null && parentCanvas.renderMode == RenderMode.ScreenSpaceCamera) 
-            ? parentCanvas.worldCamera : null;
+        Camera cam = (parentCanvas != null && parentCanvas.renderMode == RenderMode.ScreenSpaceCamera) ? parentCanvas.worldCamera : null;
 
-        if (RectTransformUtility.ScreenPointToLocalPointInRectangle(
-            joystickBackground,
-            eventData.position,
-            cam,
-            out Vector2 position))
+        if (RectTransformUtility.ScreenPointToLocalPointInRectangle(backgroundRect, eventData.position, cam, out Vector2 localPoint))
         {
-            // Chuẩn hóa vị trí tương đối với bán kính joystick
-            float maxRadius = joystickBackground.sizeDelta.x / 2f;
-            if (maxRadius <= 0) maxRadius = handleRange;
+            // Chuẩn hóa tọa độ theo kích thước background
+            Vector2 size = backgroundRect.sizeDelta;
+            float radius = handleRange > 0 ? handleRange : (size.x * 0.5f);
 
-            position.x = (position.x / maxRadius);
-            position.y = (position.y / maxRadius);
-
-            inputVector = new Vector2(position.x, position.y);
-            inputVector = (inputVector.magnitude > 1.0f) ? inputVector.normalized : inputVector;
-
-            // Di chuyển núm gạt (handle)
-            joystickHandle.anchoredPosition = new Vector2(
-                inputVector.x * (maxRadius * 0.8f),
-                inputVector.y * (maxRadius * 0.8f)
-            );
+            inputVector = Vector2.ClampMagnitude(localPoint / radius, 1f);
+            handleRect.anchoredPosition = inputVector * radius;
         }
     }
 
     public void OnPointerUp(PointerEventData eventData)
     {
         inputVector = Vector2.zero;
-        if (joystickHandle != null)
+        if (handleRect != null)
         {
-            joystickHandle.anchoredPosition = Vector2.zero;
-        }
-
-        if (isFloatingJoystick && joystickBackground != null)
-        {
-            joystickBackground.anchoredPosition = defaultBackgroundPosition;
+            handleRect.anchoredPosition = Vector2.zero;
         }
     }
 
-    public void SetVisible(bool visible)
+    private void OnDisable()
     {
-        gameObject.SetActive(visible);
+        inputVector = Vector2.zero;
+        if (handleRect != null)
+        {
+            handleRect.anchoredPosition = Vector2.zero;
+        }
     }
 }

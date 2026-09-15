@@ -113,6 +113,48 @@ public class CatManager : MonoBehaviour
     }
 
     /// <summary>
+    /// Khôi phục toàn bộ danh sách mèo đã sở hữu từ bản lưu game
+    /// </summary>
+    public void RestoreOwnedCats(List<string> catNames)
+    {
+        if (catNames == null || catNames.Count == 0) return;
+
+        HashSet<string> currentCatNames = new HashSet<string>();
+        foreach (var cat in activeCats)
+        {
+            if (cat != null)
+            {
+                currentCatNames.Add(cat.catName);
+            }
+        }
+
+        foreach (string name in catNames)
+        {
+            if (string.IsNullOrEmpty(name)) continue;
+
+            // Nếu mèo chưa có trong cảnh hiện tại, tiến hành sinh ra
+            if (!currentCatNames.Contains(name))
+            {
+                CatData matchingData = availableBreeds.Find(b => b != null && b.catName == name);
+                if (matchingData != null)
+                {
+                    SpawnCat(matchingData);
+                }
+                else
+                {
+                    // Sinh mèo cơ bản với tên đã lưu
+                    CatAI spawned = SpawnCat(null);
+                    if (spawned != null)
+                    {
+                        spawned.catName = name;
+                    }
+                }
+                currentCatNames.Add(name);
+            }
+        }
+    }
+
+    /// <summary>
     /// Lấy danh sách tên tất cả các con mèo hiện có để lưu game
     /// </summary>
     public List<string> GetOwnedCatNames()

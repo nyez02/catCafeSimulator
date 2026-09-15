@@ -10,6 +10,7 @@ public class CustomerAI : MonoBehaviour
     [Header("Settings")]
     public float cafeStayTime = 8f;
     public float basePayment = 15f;
+    public bool isVIP = false;
 
     private Transform exitPoint;
     private TableSeat currentTable;
@@ -19,9 +20,23 @@ public class CustomerAI : MonoBehaviour
         agent = GetComponent<NavMeshAgent>();
     }
 
-    public void Initialize(Transform exit)
+    public void Initialize(Transform exit, bool vip = false)
     {
         exitPoint = exit;
+        isVIP = vip;
+        StopAllCoroutines();
+
+        if (agent == null)
+        {
+            agent = GetComponent<NavMeshAgent>();
+        }
+
+        if (agent != null && agent.isOnNavMesh)
+        {
+            agent.ResetPath();
+            agent.velocity = Vector3.zero;
+        }
+
         StartCoroutine(CustomerLifecycleRoutine());
     }
 
@@ -85,19 +100,27 @@ public class CustomerAI : MonoBehaviour
         // 4. Thưởng thức cafe & chơi với mèo
         yield return new WaitForSeconds(cafeStayTime);
 
-        // 5. Tính tiền & Tiền tip mèo
+        // 5. Tính tiền & Tiền tip mèo (Áp dụng bùa lợi từ Nội thất Decor)
         int nearbyCats = currentTable.GetNearbyCatCount();
-        float tip = nearbyCats * 10f; // Mỗi chú mèo ở gần thưởng thêm $10
+        float tipMultiplier = DecorationManager.Instance != null ? DecorationManager.Instance.GetTipBonusMultiplier() : 1f;
+        float tip = (nearbyCats * 10f) * tipMultiplier;
         float totalEarned = basePayment + tip;
+        if (isVIP)
+        {
+            totalEarned *= 3f;
+            LevelManager.Instance?.AddExp(30);
+        }
 
         if (MoneyManager.Instance != null)
         {
             MoneyManager.Instance.AddMoney(totalEarned);
         }
 
+        DailyQuestManager.Instance?.AddQuestProgress("quest_serve", 1);
+
         if (LuckyPiggyBank.Instance != null && tip > 0)
         {
-            LuckyPiggyBank.Instance.AddTipToHui(tip);
+            LuckyPiggyBank.Instance.AddTipToHui(isVIP ? tip * 2f : tip);
         }
 
         if (SoundManager.Instance != null)
@@ -107,8 +130,11 @@ public class CustomerAI : MonoBehaviour
 
         if (UIManager.Instance != null)
         {
-            string msg = tip > 0 ? $"+${totalEarned} (Tip Mèo!)" : $"+${totalEarned}";
-            UIManager.Instance.ShowFloatingText(msg, transform.position + Vector3.up * 2f, Color.green);
+            string msg = isVIP
+                ? $"👑 VIP: +${totalEarned:0}! (+30 EXP)"
+                : (tip > 0 ? $"+${totalEarned:0} (Tip Mèo!)" : $"+${totalEarned:0}");
+            Color textColor = isVIP ? Color.yellow : Color.green;
+            UIManager.Instance.ShowFloatingText(msg, transform.position + Vector3.up * 2f, textColor);
         }
 
         if (CatVFXManager.Instance != null)

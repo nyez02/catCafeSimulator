@@ -109,14 +109,20 @@ public class PerformanceManager : MonoBehaviour
         Debug.Log($"[PerformanceManager] Graphics Quality set to: {tier}");
     }
 
+    private GUIStyle cachedFpsStyle;
+
     private void OnGUI()
     {
         if (showFPSCounter)
         {
-            GUIStyle style = new GUIStyle();
-            style.fontSize = 22;
-            style.normal.textColor = currentFps >= 55 ? Color.green : (currentFps >= 30 ? Color.yellow : Color.red);
-            GUI.Label(new Rect(20, 20, 200, 40), $"FPS: {currentFps:0.0}", style);
+            if (cachedFpsStyle == null)
+            {
+                cachedFpsStyle = new GUIStyle();
+                cachedFpsStyle.fontSize = 22;
+            }
+
+            cachedFpsStyle.normal.textColor = currentFps >= 55 ? Color.green : (currentFps >= 30 ? Color.yellow : Color.red);
+            GUI.Label(new Rect(20, 20, 200, 40), $"FPS: {currentFps:0.0}", cachedFpsStyle);
         }
     }
 }

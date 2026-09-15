@@ -40,6 +40,8 @@ public class LuckyPiggyBank : MonoBehaviour
         currentBalance = Mathf.Min(maxCapacity, currentBalance + added);
         OnHuiBalanceChanged?.Invoke(currentBalance, maxCapacity);
 
+        DailyQuestManager.Instance?.AddQuestProgress("quest_hui", Mathf.CeilToInt(added));
+
         if (IsFull())
         {
             if (UIManager.Instance != null)
@@ -85,7 +87,18 @@ public class LuckyPiggyBank : MonoBehaviour
 
         if (UIManager.Instance != null)
         {
-            UIManager.Instance.ShowFloatingText($"🎉 ĐẬP HŨ THÀNH CÔNG! +${jackpotMoney:0.0} & +{rewardedGems} 🐾", Camera.main.transform.position + Camera.main.transform.forward * 2f, Color.green);
+            Camera cam = Camera.main;
+            Vector3 promptPos = cam != null ? cam.transform.position + cam.transform.forward * 2f : Vector3.zero;
+            UIManager.Instance.ShowFloatingText($"🎉 ĐẬP HŨ THÀNH CÔNG! +${jackpotMoney:0.0} & +{rewardedGems} 🐾", promptPos, Color.green);
+        }
+
+        ToastManager.Instance?.ShowToast($"Đã đập Hũ Hụi! Nhận +${jackpotMoney:0.0} & +{rewardedGems} 🐾!", "🐷", new Color(0.9f, 0.5f, 0.1f, 0.95f));
+
+        if (CatVFXManager.Instance != null)
+        {
+            Camera cam = Camera.main;
+            Vector3 vfxPos = cam != null ? cam.transform.position + cam.transform.forward * 2f : Vector3.zero;
+            CatVFXManager.Instance.SpawnConfettiCelebration(vfxPos);
         }
 
         // Reset hũ và nâng cấp sức chứa cho kỳ hụi kế tiếp

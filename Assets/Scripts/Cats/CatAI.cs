@@ -35,12 +35,12 @@ public class CatAI : MonoBehaviour
     [Header("Current State")]
     public CatState currentState = CatState.Idle;
 
-    // Animation state names in LittleCat.controller
-    private const string ANIM_IDLE = "02_Idle_Cat_Copy";
-    private const string ANIM_WALK = "03_Walk_Cat_Copy";
-    private const string ANIM_EAT = "07_Eat_Cat_Copy";
-    private const string ANIM_SLEEP = "08_Sleep01_Cat_Copy";
-    private const string ANIM_GREET = "06_Greeting_Cat_Copy";
+    // Animation state hashes in LittleCat.controller
+    private static readonly int HASH_IDLE = Animator.StringToHash("02_Idle_Cat_Copy");
+    private static readonly int HASH_WALK = Animator.StringToHash("03_Walk_Cat_Copy");
+    private static readonly int HASH_EAT = Animator.StringToHash("07_Eat_Cat_Copy");
+    private static readonly int HASH_SLEEP = Animator.StringToHash("08_Sleep01_Cat_Copy");
+    private static readonly int HASH_GREET = Animator.StringToHash("06_Greeting_Cat_Copy");
 
     private FoodBowl targetBowl;
 
@@ -54,11 +54,24 @@ public class CatAI : MonoBehaviour
     {
         agent.speed = catData != null ? catData.baseMovementSpeed : 2f;
         stateTimer = waitTime;
-        PlayAnimation(ANIM_IDLE);
+        PlayAnimation(HASH_IDLE);
 
         if (CatManager.Instance != null)
         {
             CatManager.Instance.RegisterCat(this);
+        }
+
+        EnsureEmotionBubble();
+    }
+
+    private void EnsureEmotionBubble()
+    {
+        if (GetComponentInChildren<CatEmotionBubble>() == null)
+        {
+            GameObject bubbleObj = new GameObject("CatEmotionBubble");
+            bubbleObj.transform.SetParent(transform);
+            bubbleObj.transform.localPosition = Vector3.up * 1.3f;
+            bubbleObj.AddComponent<CatEmotionBubble>();
         }
     }
 
@@ -83,13 +96,9 @@ public class CatAI : MonoBehaviour
                 HandleWander();
                 break;
             case CatState.Eating:
-                HandleEating();
-                break;
             case CatState.Sleeping:
-                HandleSleeping();
-                break;
             case CatState.Greeting:
-                // Greeting handled in coroutine
+                // Handled in coroutines (EatRoutine, SleepRoutine, PetRoutine)
                 break;
         }
     }
@@ -115,7 +124,7 @@ public class CatAI : MonoBehaviour
                     targetBowl = bowl;
                     agent.SetDestination(bowl.transform.position);
                     currentState = CatState.Wander;
-                    PlayAnimation(ANIM_WALK);
+                    PlayAnimation(HASH_WALK);
                 }
             }
         }
@@ -144,7 +153,7 @@ public class CatAI : MonoBehaviour
 
             // Đến điểm đi dạo xong thì chuyển sang Idle hoặc Ngủ
             currentState = CatState.Idle;
-            PlayAnimation(ANIM_IDLE);
+            PlayAnimation(HASH_IDLE);
             stateTimer = 0f;
             waitTime = Random.Range(2f, 5f);
         }
@@ -166,7 +175,7 @@ public class CatAI : MonoBehaviour
             {
                 agent.SetDestination(availableTable.transform.position);
                 currentState = CatState.Wander;
-                PlayAnimation(ANIM_WALK);
+                PlayAnimation(HASH_WALK);
             }
             else
             {
@@ -189,19 +198,19 @@ public class CatAI : MonoBehaviour
         {
             agent.SetDestination(hit.position);
             currentState = CatState.Wander;
-            PlayAnimation(ANIM_WALK);
+            PlayAnimation(HASH_WALK);
         }
         else
         {
             currentState = CatState.Idle;
-            PlayAnimation(ANIM_IDLE);
+            PlayAnimation(HASH_IDLE);
         }
     }
 
     private IEnumerator EatRoutine()
     {
         currentState = CatState.Eating;
-        PlayAnimation(ANIM_EAT);
+        PlayAnimation(HASH_EAT);
 
         yield return new WaitForSeconds(4f);
 
@@ -213,19 +222,19 @@ public class CatAI : MonoBehaviour
         }
 
         currentState = CatState.Idle;
-        PlayAnimation(ANIM_IDLE);
+        PlayAnimation(HASH_IDLE);
         stateTimer = 0f;
     }
 
     private IEnumerator SleepRoutine(float duration)
     {
         currentState = CatState.Sleeping;
-        PlayAnimation(ANIM_SLEEP);
+        PlayAnimation(HASH_SLEEP);
 
         yield return new WaitForSeconds(duration);
 
         currentState = CatState.Idle;
-        PlayAnimation(ANIM_IDLE);
+        PlayAnimation(HASH_IDLE);
         stateTimer = 0f;
     }
 
@@ -234,7 +243,9 @@ public class CatAI : MonoBehaviour
     /// </summary>
     public void Pet()
     {
-        happiness = Mathf.Min(100f, happiness + 25f);
+        float bonus = DecorationManager.Instance != null ? DecorationManager.Instance.GetCatHappinessBonus() : 0f;
+        float gain = 25f + bonus;
+        happiness = Mathf.Min(100f, happiness + gain);
         StartCoroutine(PetRoutine());
 
         if (SoundManager.Instance != null)
@@ -244,8 +255,10 @@ public class CatAI : MonoBehaviour
 
         if (UIManager.Instance != null)
         {
-            UIManager.Instance.ShowFloatingText("❤️ +25", transform.position + Vector3.up * 1.2f, Color.magenta);
+            UIManager.Instance.ShowFloatingText($"❤️ +{gain:0}", transform.position + Vector3.up * 1.2f, Color.magenta);
         }
+
+        DailyQuestManager.Instance?.AddQuestProgress("quest_pet", 1);
 
         if (CatVFXManager.Instance != null)
         {
@@ -263,12 +276,12 @@ public class CatAI : MonoBehaviour
         CatState prevState = currentState;
         currentState = CatState.Greeting;
         agent.ResetPath();
-        PlayAnimation(ANIM_GREET);
+        PlayAnimation(HASH_GREET);
 
         yield return new WaitForSeconds(2.5f);
 
         currentState = CatState.Idle;
-        PlayAnimation(ANIM_IDLE);
+        PlayAnimation(HASH_IDLE);
     }
 
     private void OnMouseDown()
@@ -276,11 +289,11 @@ public class CatAI : MonoBehaviour
         Pet();
     }
 
-    private void PlayAnimation(string stateName)
+    private void PlayAnimation(int stateHash)
     {
-        if (animator != null && animator.HasState(0, Animator.StringToHash(stateName)))
+        if (animator != null && animator.HasState(0, stateHash))
         {
-            animator.CrossFade(stateName, 0.2f);
+            animator.CrossFade(stateHash, 0.2f);
         }
     }
 }

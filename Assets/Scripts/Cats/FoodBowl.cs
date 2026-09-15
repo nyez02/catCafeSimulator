@@ -54,16 +54,17 @@ public class FoodBowl : MonoBehaviour
     public static FoodBowl GetNearestAvailableBowl(Vector3 position)
     {
         FoodBowl nearest = null;
-        float minDist = float.MaxValue;
+        float minSqrDist = float.MaxValue;
 
-        foreach (var bowl in AllBowls)
+        for (int i = 0; i < AllBowls.Count; i++)
         {
+            FoodBowl bowl = AllBowls[i];
             if (bowl != null && bowl.HasFood())
             {
-                float dist = Vector3.Distance(position, bowl.transform.position);
-                if (dist < minDist)
+                float sqrDist = (position - bowl.transform.position).sqrMagnitude;
+                if (sqrDist < minSqrDist)
                 {
-                    minDist = dist;
+                    minSqrDist = sqrDist;
                     nearest = bowl;
                 }
             }

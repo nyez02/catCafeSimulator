@@ -9,6 +9,8 @@ public class MainMenuUI : MonoBehaviour
     public GameObject settingsPanel;
     public GameObject dailyRewardPanel;
     public GameObject levelSelectPanel;
+    public GameObject leaderboardPanel;
+    public LeaderboardUI leaderboardUI;
 
     [Header("Daily Reward References")]
     public TextMeshProUGUI streakText;
@@ -39,7 +41,7 @@ public class MainMenuUI : MonoBehaviour
     public void OnPlayButtonClicked()
     {
         SoundManager.Instance?.PlayClick();
-        SceneManager.LoadScene("CafeScene");
+        LoadingScreenUI.LoadScene("CafeScene");
     }
 
     public void OnOpenLevelSelectClicked()
@@ -114,11 +116,31 @@ public class MainMenuUI : MonoBehaviour
         }
     }
 
+    public void OnOpenLeaderboardClicked()
+    {
+        SoundManager.Instance?.PlayClick();
+        CloseAllPanels();
+        if (leaderboardUI != null)
+        {
+            leaderboardUI.OpenLeaderboard();
+        }
+        else if (leaderboardPanel != null)
+        {
+            leaderboardPanel.SetActive(true);
+        }
+        else if (LeaderboardUI.Instance != null)
+        {
+            LeaderboardUI.Instance.OpenLeaderboard();
+        }
+    }
+
     public void CloseAllPanels()
     {
         if (settingsPanel != null) settingsPanel.SetActive(false);
         if (dailyRewardPanel != null) dailyRewardPanel.SetActive(false);
         if (levelSelectPanel != null) levelSelectPanel.SetActive(false);
+        if (leaderboardPanel != null) leaderboardPanel.SetActive(false);
+        if (leaderboardUI != null) leaderboardUI.CloseLeaderboard();
     }
 
     public void OnExitGameClicked()

@@ -1,9 +1,6 @@
 using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
-using Firebase;
-using Firebase.Database;
-using Firebase.Extensions;
 
 [System.Serializable]
 public class GameSaveData
@@ -19,6 +16,8 @@ public class GameSaveData
     public int dailyStreak = 0;
     public string lastClaimDateStr = "";
     public bool tutorialCompleted = false;
+    public List<string> unlockedDecorations = new List<string>();
+    public List<string> hiredStaffIds = new List<string>();
     public long lastSaveTimestamp;
 }
 
@@ -31,8 +30,9 @@ public class SaveManager : MonoBehaviour
     private float autoSaveTimer;
 
     private string saveFilePath;
-    private DatabaseReference dbReference;
-    private string userId = "cafe_owner_default";
+    private GameSaveData currentLocalData;
+
+    public GameSaveData GetCurrentSaveData() => currentLocalData;
 
     private void Awake()
     {
@@ -45,12 +45,25 @@ public class SaveManager : MonoBehaviour
         DontDestroyOnLoad(gameObject);
 
         saveFilePath = Path.Combine(Application.persistentDataPath, "savegame.json");
-        InitializeFirebase();
     }
 
     private void Start()
     {
         LoadGame();
+
+        // Lắng nghe khi Firebase sẵn sàng để kiểm tra đồng bộ hai chiều
+        if (FirebaseManager.Instance != null)
+        {
+            FirebaseManager.Instance.OnFirebaseStateChanged += OnFirebaseReady;
+        }
+    }
+
+    private void OnDestroy()
+    {
+        if (FirebaseManager.Instance != null)
+        {
+            FirebaseManager.Instance.OnFirebaseStateChanged -= OnFirebaseReady;
+        }
     }
 
     private void Update()
@@ -76,20 +89,12 @@ public class SaveManager : MonoBehaviour
         }
     }
 
-    private void InitializeFirebase()
+    private void OnFirebaseReady(bool isReady)
     {
-        FirebaseApp.CheckAndFixDependenciesAsync().ContinueWithOnMainThread(task =>
+        if (isReady)
         {
-            if (task.Result == DependencyStatus.Available)
-            {
-                dbReference = FirebaseDatabase.DefaultInstance.RootReference;
-                Debug.Log("[SaveManager] Firebase Realtime Database Initialized!");
-            }
-            else
-            {
-                Debug.LogWarning($"[SaveManager] Firebase dependencies not available: {task.Result}");
-            }
-        });
+            SyncWithCloud();
+        }
     }
 
     public void SaveGame()
@@ -145,7 +150,20 @@ public class SaveManager : MonoBehaviour
             data.tutorialCompleted = (TutorialManager.Instance.currentStep == TutorialStep.Completed) || !TutorialManager.Instance.isTutorialActive;
         }
 
+        // 8. Nội thất trang trí
+        if (DecorationManager.Instance != null)
+        {
+            data.unlockedDecorations = DecorationManager.Instance.unlockedDecorationIds;
+        }
+
+        // 9. Nhân viên mèo đã thuê
+        if (StaffManager.Instance != null)
+        {
+            data.hiredStaffIds = StaffManager.Instance.hiredStaffIds;
+        }
+
         data.lastSaveTimestamp = System.DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        currentLocalData = data;
 
         string json = JsonUtility.ToJson(data, true);
 
@@ -153,43 +171,82 @@ public class SaveManager : MonoBehaviour
         try
         {
             File.WriteAllText(saveFilePath, json);
-            Debug.Log("[SaveManager] Game saved locally to: " + saveFilePath);
+            Debug.Log("[SaveManager] Đã lưu game nội bộ vào: " + saveFilePath);
         }
         catch (System.Exception ex)
         {
-            Debug.LogError("[SaveManager] Failed to save locally: " + ex.Message);
+            Debug.LogError("[SaveManager] Lỗi lưu game nội bộ: " + ex.Message);
         }
 
-        // Lưu Cloud Firebase
-        if (dbReference != null)
+        // Đồng bộ Cloud Firebase nếu sẵn sàng
+        if (FirebaseManager.Instance != null && FirebaseManager.Instance.isInitialized)
         {
-            dbReference.Child("users").Child(userId).Child("saveData").SetRawJsonValueAsync(json).ContinueWithOnMainThread(task =>
-            {
-                if (task.IsCompleted)
-                {
-                    Debug.Log("[SaveManager] Game saved to Firebase Cloud!");
-                }
-            });
+            FirebaseManager.Instance.SaveSaveDataToCloud(json);
+
+            // Cập nhật Bảng Xếp Hạng Toàn Cầu
+            int catCount = (data.ownedCatNames != null) ? data.ownedCatNames.Count : 0;
+            FirebaseManager.Instance.SubmitScoreToLeaderboard(data.cafeLevel, data.currentMoney, catCount);
         }
     }
 
     public void LoadGame()
     {
+        // 1. Tải bản lưu local trước để người chơi vào game ngay lập tức (Zero Latency)
         LoadGameLocally();
 
-        if (dbReference != null)
+        // 2. Thử đồng bộ với Cloud
+        SyncWithCloud();
+    }
+
+    private void SyncWithCloud()
+    {
+        if (FirebaseManager.Instance == null || !FirebaseManager.Instance.isInitialized) return;
+
+        FirebaseManager.Instance.LoadSaveDataFromCloud(cloudJson =>
         {
-            dbReference.Child("users").Child(userId).Child("saveData").GetValueAsync().ContinueWithOnMainThread(task =>
+            if (string.IsNullOrEmpty(cloudJson))
             {
-                if (task.IsCompleted && task.Result.Exists)
+                // Chưa có dữ liệu trên Cloud -> Tải bản lưu local hiện tại lên Cloud
+                if (currentLocalData != null)
                 {
-                    string json = task.Result.GetRawJsonValue();
-                    GameSaveData cloudData = JsonUtility.FromJson<GameSaveData>(json);
-                    RestoreDataToManagers(cloudData);
-                    Debug.Log("[SaveManager] Loaded & Synced from Firebase!");
+                    string localJson = JsonUtility.ToJson(currentLocalData, true);
+                    FirebaseManager.Instance.SaveSaveDataToCloud(localJson);
                 }
-            });
-        }
+                return;
+            }
+
+            try
+            {
+                GameSaveData cloudData = JsonUtility.FromJson<GameSaveData>(cloudJson);
+                if (cloudData == null) return;
+
+                long localTimestamp = currentLocalData != null ? currentLocalData.lastSaveTimestamp : 0;
+                long cloudTimestamp = cloudData.lastSaveTimestamp;
+
+                // Phân giải xung đột theo dấu thời gian (Conflict Resolution)
+                if (cloudTimestamp > localTimestamp)
+                {
+                    Debug.Log("[SaveManager] Dữ liệu Cloud mới hơn Local -> Cập nhật dữ liệu từ Cloud!");
+                    File.WriteAllText(saveFilePath, cloudJson);
+                    currentLocalData = cloudData;
+                    RestoreDataToManagers(cloudData);
+                }
+                else if (localTimestamp > cloudTimestamp)
+                {
+                    Debug.Log("[SaveManager] Dữ liệu Local mới hơn Cloud (Chơi offline trước đó) -> Đẩy Local lên Cloud!");
+                    string localJson = JsonUtility.ToJson(currentLocalData, true);
+                    FirebaseManager.Instance.SaveSaveDataToCloud(localJson);
+                }
+                else
+                {
+                    Debug.Log("[SaveManager] Dữ liệu Local và Cloud đã đồng bộ.");
+                }
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogWarning("[SaveManager] Lỗi xử lý dữ liệu từ Cloud: " + ex.Message);
+            }
+        });
     }
 
     private void LoadGameLocally()
@@ -200,12 +257,13 @@ public class SaveManager : MonoBehaviour
             {
                 string json = File.ReadAllText(saveFilePath);
                 GameSaveData data = JsonUtility.FromJson<GameSaveData>(json);
+                currentLocalData = data;
                 RestoreDataToManagers(data);
-                Debug.Log("[SaveManager] Game loaded from local save.");
+                Debug.Log("[SaveManager] Đã tải game từ bộ nhớ thiết bị.");
             }
             catch (System.Exception ex)
             {
-                Debug.LogError("[SaveManager] Error loading local save: " + ex.Message);
+                Debug.LogError("[SaveManager] Lỗi đọc file save local: " + ex.Message);
             }
         }
         else
@@ -243,6 +301,12 @@ public class SaveManager : MonoBehaviour
             TableManager.Instance.SetUnlockedTables(data.unlockedTableCount);
         }
 
+        // Khôi phục tất cả các chú mèo đã mua từ trước
+        if (CatManager.Instance != null && data.ownedCatNames != null && data.ownedCatNames.Count > 0)
+        {
+            CatManager.Instance.RestoreOwnedCats(data.ownedCatNames);
+        }
+
         if (LuckyPiggyBank.Instance != null)
         {
             LuckyPiggyBank.Instance.LoadHuiData(data.luckyPiggyBankBalance, data.luckyPiggyBankCapacity);
@@ -272,6 +336,18 @@ public class SaveManager : MonoBehaviour
             }
         }
 
+        // Khôi phục các nội thất đã mở khóa
+        if (DecorationManager.Instance != null && data.unlockedDecorations != null)
+        {
+            DecorationManager.Instance.unlockedDecorationIds = data.unlockedDecorations;
+        }
+
+        // Khôi phục nhân viên mèo
+        if (StaffManager.Instance != null && data.hiredStaffIds != null)
+        {
+            StaffManager.Instance.hiredStaffIds = data.hiredStaffIds;
+        }
+
         // Tính toán thu nhập nhàn rỗi khi vắng nhà (Offline Idle Earnings)
         CheckOfflineEarnings(data);
     }
@@ -292,7 +368,10 @@ public class SaveManager : MonoBehaviour
             // Tốc độ: Mỗi chú mèo kiếm được khoảng $0.05 / giây
             int catCount = (data.ownedCatNames != null && data.ownedCatNames.Count > 0) ? data.ownedCatNames.Count : 2;
             float earnedRatePerSecond = catCount * 0.05f;
-            float offlineRevenue = Mathf.Round(cappedSeconds * earnedRatePerSecond);
+
+            // Áp dụng bùa lợi tăng thu nhập offline từ nội thất decor
+            float offlineMultiplier = DecorationManager.Instance != null ? DecorationManager.Instance.GetOfflineBonusMultiplier() : 1f;
+            float offlineRevenue = Mathf.Round(cappedSeconds * earnedRatePerSecond * offlineMultiplier);
 
             if (offlineRevenue >= 5f && UIManager.Instance != null)
             {
